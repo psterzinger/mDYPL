@@ -4,5 +4,4 @@ This repo contains all materials to the paper: *Maximum Diaconis & Ylvisaker pen
 - **Scripts**: All scripts to recreate the numerical results and plots in the paper. 
 	- `AMP_DY.jl`: A julia module to compute the mDYPL estimator and to numerically find the state evolution parameters (μ,b,σ). 
 - **Results**: Results here
-- **mDYPL_supplementary.pdf**: Document with further material to the examples and simulations of the paper and additional simulation studies.
-
+- **mDYPL_supplementary.pdf**: Document with proofs of the results in the main paper, along with additional numerical results. 
