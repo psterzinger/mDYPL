@@ -8,18 +8,26 @@ kappas = .05:.0125:0.9875
 gammas = .125:0.125:10
 alphas = 0.0125:0.0125:1.0
 
-pars_full = load(joinpath(home_dir, "Results", "DY_pars_full_long_run8.jld2"))["pars_full"]
-res = load(joinpath(home_dir, "Results", "DY_pars_full_res_run8.jld2"))["res"]
-
+pars_full = load(joinpath(home_dir, "Results", "DY_pars_full.jld2"))["pars_full"]
+res = load(joinpath(home_dir, "Results", "DY_pars_full_res.jld2"))["res"]
 #=
+using Distributed
+addprocs(20)
+@everywhere home_dir = ""
+@everywhere include(joinpath(home_dir, "Scripts", "AMP_DY.jl"))
+@everywhere using .AMP_DY, SharedArrays
+
 res = similar(pars_full)
-rs = randn(3)
+res = SharedArray(res) 
+pars_full = SharedArray(pars_full)
+
 for k in eachindex(alphas) 
     for i in eachindex(gammas) 
-        for j in eachindex(kappas)
+        @sync @distributed for j in eachindex(kappas)
             if(!any(isnan.(pars_full[i,j,k,:])))
+                rs = randn(3)
                 Main.AMP_DY.eq_bin!(rs, pars_full[i,j,k,:], kappas[j], gammas[i], alphas[k]) 
-                roots[i,j,k,:] = rs
+                res[i,j,k,:] = rs
             end 
         end 
     end 
@@ -44,14 +52,17 @@ end
 
 gr() 
 #scalefontsizes(1.5)
-p = Plots.wireframe(gammas[4:48],kappas[1:69],min_alpha[4:48,1:69]',
+grange = 1:length(gammas) 
+krange = 1:length(kappas) 
+
+p = Plots.wireframe(gammas[grange],kappas[krange],min_alpha[grange,krange]',
     xflip = true, 
-    #yflip = true,
+    yflip = true,
     camera  = (30,45),
     xlabel = L"$\gamma$",
     ylabel = L"$\kappa$", 
     size = (400,400), 
-    xticks = ([1,2,3,4,5,6],[L"$1$",L"$2$",L"$3$",L"$4$",L"$5$",L"$6$"]), 
+    xticks = (vcat(1,2:2:10),[L"1", L"$2$",L"$4$",L"$6$",L"$8$",L"$10$"]), 
     yticks = ([0.2,0.4,0.6,0.8],[L"$0.2$",L"$0.4$",L"$0.6$",L"$0.8$"]), 
     zticks = ([0.2,0.4,0.6,0.8,1.0],[L"$0.2$",L"$0.4$",L"$0.6$",L"$0.8$",L"$1$"]),
 ) 

@@ -1,3 +1,6 @@
+## Philipp Sterzinger 23.10.2023
+## Provided as is, although state evolutions have been unit tested, no guarantee for correctness is given 
+
 module AMP_Ridge 
 
 export find_params_ridge_nonlinearsolve, find_params_ridge_nlsolve, logistic_ridge
@@ -46,6 +49,50 @@ function eq_bin_integrands!(g, x, gamma, kappa, lambda, mu, sigma, b; cutoff = 5
     g[abs.(g).>cutoff] .= NaN 
 end 
 
+"""
+    find_params_ridge_nlsolve(kappa,gamma,lambda; kwargs...) 
+
+Solve the stationary logistic ridge state evolution equations for `mu, b, sigma` using `NLsolve` given parameters `kappa`, `gamma`, `lambda` and return `NLsolve` return struct. 
+N.b.: `sigma` corresponds to `σ̄ / √κ` in Salehi et al. (2019)
+
+# Arguments 
+`kappa::Float64`: Asymptotic ratio of columns/rows of design matrix ∈ (0,1)
+
+`gamma::Float64`: Asymptotic variance of true unobserved linear predictors ≥ 0.0
+
+`lambda::Float64`: Shrinkage paramater lambda of ridge penalty ≥ 0.0
+
+# Keyword Arguments 
+`verbose::Bool=false`: print solver information at each Newton step
+
+`x_init::Union{Missing,Vector{Float64}}=missing`: provide custom starting values of mu, b, sigma
+
+`constrained_solve::Bool=false`: use constrained solver functionality of `NLsolve`
+
+`reformulation::Symbol=:smooth`: use one of `NLsolve`'s constrained_solve reformulation options `:smooth`, `:minmax`
+
+`method::Symbol=:newton`: provide one of `NLsolve`'s solvers `:newton`, `:trust_region`, `:anderson`
+
+`iterations::Int64=100`:  maximum number of iterations
+
+`linesearch::Any=LineSearches.BackTracking(order=3)`: linesearch algorithm from `LineSearches`
+
+`ftol::Float64=1e-6`: infinite norm of residuals under which convergence is declared
+
+`int_abstol::Float64=1e-10` and `int_reltol::Float64 = 1e-10`: the requested relative (ϵ_rel) and absolute (ϵ_abs​) accuracies of the integrals; see `Cuba` for more info 
+
+# Examples 
+```jldoctest
+julia> sol = find_params_ridge_nlsolve(0.2,sqrt(5),0.0; x_init = [1.5,3.,4.7]);
+julia> sol.zero 
+3-element Vector{Float64}:
+ 1.4993501022044349
+ 3.026926110363654
+ 4.743553082156796
+```
+
+See also [`find_params_ridge_nonlinearsolve`](@ref)
+"""
 function find_params_ridge_nlsolve(kappa, gamma, lambda;
     verbose = false, 
     x_init = missing, 
@@ -96,13 +143,54 @@ function find_params_ridge_nlsolve(kappa, gamma, lambda;
     sol
 end 
 
+"""
+    find_params_ridge_nonlinearsolve(kappa,gamma,lambda; <keyword arguments>) 
+
+Solve the stationary mDYPL state evolution equations for `mu, b, sigma` using `NonlinearSolve` given parameters `kappa`, `gamma`, `lambda` and return `Vector{Float64}`. 
+N.b.: `sigma` corresponds to `σ̄ / √κ` in Salehi et al. (2019)
+
+# Arguments 
+`kappa::Float64`: Asymptotic ratio of columns/rows of design matrix ∈ (0,1)
+
+`gamma::Float64`: Asymptotic variance of true unobserved linear predictors ≥ 0.0
+
+`lambda::Float64`: Shrinkage paramater lambda of ridge penalty ≥ 0.0
+
+# Keyword Arguments 
+`verbose::Bool=false`: print solver information at each Newton step
+
+`x_init::Union{Missing,Vector{Float64}}=missing`: provide custom starting values of mu, b, sigma
+
+`method::SciMLBase.AbstractNonlinearAlgorithm=NewtonRaphson()`: provide one of `NonlinearSolve`'s solvers `NewtonRaphson()`, `TrustRegion()`
+
+`iterations::Int64=100`: maximum number of iterations
+
+`abstol::Float64=1e-6`: infinite norm of residuals under which convergence is declared
+
+`reltol::Float64=1e-6`: infinite norm of residuals under which convergence is declared
+
+`specialize::DataType=SciMLBase.FullSpecialize`: control the amount of compilation specialization is performed for the NonlinearProblem; see `SciMLBase`
+
+`int_abstol::Float64=1e-10` and `int_reltol::Float64 = 1e-10`: the requested relative (ϵ_rel) and absolute (ϵ_abs​) accuracies of the integrals; see `Cuba` for more info
+
+# Examples 
+```jldoctest
+julia> sol = find_params_ridge_nonlinearsolve(0.2,sqrt(5),0.0)
+3-element Vector{Float64}:
+ 1.49935007951724
+ 3.0269260555057445
+ 4.743552987810247
+```
+
+See also [`find_params_ridge_nlsolve`](@ref)
+"""
 function find_params_ridge_nonlinearsolve(kappa, gamma, lambda;
     verbose::Bool = false,
     x_init::Union{Missing,Vector{Float64}} = missing, 
     method::SciMLBase.AbstractNonlinearAlgorithm = NewtonRaphson(), 
     iterations::Int64 = 100,
-    abstol::Float64 = 1e-8,
-    reltol::Float64 = 1e-8, 
+    abstol::Float64 = 1e-6,
+    reltol::Float64 = 1e-6, 
     specialize::DataType = SciMLBase.FullSpecialize,
     int_abstol::Float64 = 1e-10, 
     int_reltol::Float64 = 1e-10, 
@@ -158,6 +246,41 @@ function find_params_ridge_nonlinearsolve(kappa, gamma, lambda;
 end 
 
 ## logistic ridge estimator
+"""
+    logistic_ridge(y, X, lambda; beta_init = missing, kwargs...) 
+
+Compute the ridge estimator for a logistic regression model using data `y`,`X` and shrinkage parameter `alpha` and return a `Optim.optimize` return struct. 
+
+# Arguments 
+`y::Vector`: Vector of binary responses
+
+`X::Matrix`: Matrix of covariates 
+
+`lambda::Float64`: Shrinkage paramater lambda of ridge penalty ≥ 0.0
+
+# Keyword Arguments 
+`beta_init::Union{Missing,Vector{Float64}}=missing`: provide starting values for minimization, if missing `beta_init = zeros(size(X, 2))`
+
+`kwargs...`: keyword arguments to be passed to `Optim.optimize` 
+
+# Examples 
+```jldoctest
+julia> using Random, Optim  # Load necessary packages
+julia> Random.seed!(123);  # Seed the random number generator for reproducibility
+julia> n = 1000;  # Number of observations
+julia> p = 100;   # Number of features
+julia> X = randn(n,p) / sqrt(n);  # Generate a random feature matrix
+julia> beta = vcat(fill(0.0, ceil(Int64, p / 2)), fill(10.0, p-ceil(Int64, p / 2)));  # True coefficient vector
+julia> y = rand(n) .< 1.0 ./ (1.0 .+ exp.(.-X * beta));  # Generate binary response variable
+julia> lambda = 0.1;  # Regularization parameter
+julia> lr = logistic_ridge(y, X, lambda; beta_init = beta);  # Fit the model
+julia> Optim.minimizer(lr)
+100-element Vector{Float64}:
+ 0.007007540329276629
+ ⋮
+ 0.2993768841574827
+```
+"""
 function logistic_ridge(y, X, lambda; beta_init = missing, kwargs...) 
     (n,p) = size(X)
     mu_buff = Vector{Float64}(undef,n)

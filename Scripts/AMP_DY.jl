@@ -1,6 +1,5 @@
 ## Philipp Sterzinger 03.10.2023
 ## Provided as is, although state evolutions have been unit tested, no guarantee for correctness is given 
-## gamma = 0 is not implemented
 
 module AMP_DY 
 
@@ -180,7 +179,7 @@ end
 """
     find_params_nlsolve(kappa,gamma,a; kwargs...) 
 
-Solve the stationary mDYPL state evolution equations `mu, b, sigma` using `NLsolve` given parameters `kappa`, `gamma`, `a` and return `NLsolve` return struct. 
+Solve the stationary mDYPL state evolution equations for `mu, b, sigma` using `NLsolve` given parameters `kappa`, `gamma`, `a` and return `NLsolve` return struct. 
 
 # Arguments 
 `kappa::Float64`: Asymptotic ratio of columns/rows of design matrix ∈ (0,1)
@@ -213,11 +212,11 @@ Solve the stationary mDYPL state evolution equations `mu, b, sigma` using `NLsol
 # Examples 
 ```jldoctest
 julia> sol = find_params_nlsolve(0.2,sqrt(5),1.0; x_init = [1.5,3.,4.7]);
-julia> sol.zero 
+julia> sol.zero
 3-element Vector{Float64}:
- 1.4994127712343261
- 3.0270353075047765
- 4.7437383902484
+ 1.4993501022044349
+ 3.026926110363654
+ 4.743553082156796
 ```
 
 See also [`find_params_nonlinearsolve`](@ref)
@@ -291,7 +290,7 @@ end
 """
     find_params_nonlinearsolve(kappa,gamma,a; <keyword arguments>) 
 
-Solve the stationary mDYPL state evolution equations `mu, b, sigma` using `NonlinearSolve` given parameters `kappa`, `gamma`, `a` and return `Vector{Float64}`. 
+Solve the stationary mDYPL state evolution equations for `mu, b, sigma` using `NonlinearSolve` given parameters `kappa`, `gamma`, `a` and return `Vector{Float64}`. 
 
 # Arguments 
 `kappa::Float64`: Asymptotic ratio of columns/rows of design matrix ∈ (0,1)
@@ -321,11 +320,11 @@ Solve the stationary mDYPL state evolution equations `mu, b, sigma` using `Nonli
 
 # Examples 
 ```jldoctest
-sol = find_params_nonlinearsolve(0.2,sqrt(5),1.0)
+julia> sol = find_params_nonlinearsolve(0.2,sqrt(5),1.0)
 3-element Vector{Float64}:
- 1.499412777504286
- 3.027035314829301
- 4.743738403143466
+ 1.4993501215089675
+ 3.0269261565643406
+ 4.743553152192829
 ```
 
 See also [`find_params_nlsolve`](@ref)
@@ -541,21 +540,20 @@ Compute the mDYPL estimator for a logistic regression model using data `y`,`X` a
 
 # Examples 
 ```jldoctest
-using Random, Optim
-Random.seed!(123)
-n = 1000
-p = 100 
-X = randn(n,p) / sqrt(n) 
-beta = vcat(fill(0.0, ceil(Int64, p / 2)), fill(10.0, p-ceil(Int64, p / 2)))
-y = rand(n) .< 1.0 ./ (1.0 .+ exp.(.-X * beta))
-alpha = 1 / 1.1
-mDYPL = logistic_mDYPL(y, X, alpha; beta_init = beta) 
-Optim.minimizer(mDYPL)
+julia> using Random, Optim  # Load necessary packages
+julia> Random.seed!(123);  # Seed the random number generator for reproducibility
+julia> n = 1000;  # Number of observations
+julia> p = 100;   # Number of features
+julia> X = randn(n,p) / sqrt(n);  # Generate a random feature matrix
+julia> beta = vcat(fill(0.0, ceil(Int64, p / 2)), fill(10.0, p-ceil(Int64, p / 2)));  # True coefficient vector
+julia> y = rand(n) .< 1.0 ./ (1.0 .+ exp.(.-X * beta));  # Generate binary response variable
+julia> alpha = 0.1;  # Shrinkage parameter
+julia> mDYPL = logistic_mDYPL(y, X, alpha; beta_init = beta);  # Fit the model
+julia> Optim.minimizer(mDYPL)
 100-element Vector{Float64}:
-  0.1431992418085259
- -0.46534789400516297
+ -0.056723264412529874
   ⋮
-  3.2790351663040407
+  0.2590704292567825
 ```
 """
 function logistic_mDYPL(y, X, alpha; beta_init = missing, kwargs...) 
