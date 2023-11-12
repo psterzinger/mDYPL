@@ -19,7 +19,8 @@ function fill_beta_SC(p)
     vcat(fill(-10,pp),fill(10,pp),fill(0.0,p-2*pp))
 end 
 
-n = 2000
+#n = 1000 # for Figure 1 
+n = 2000 # for Figure 2
 kappas = (0.1,0.2,0.4,0.6,0.8,0.9) 
 gammas = (2,6,10,14,18)
 b = [-3,-3/2,0,3/2,3]
@@ -38,7 +39,7 @@ end
 
 grid_inds = vcat(1,11,21,7,17,3,13,23,9,19,5,15,25)
 
-kg_pairs = full_grid[grid_inds]
+kg_pairs = vcat((0.2,sqrt(0.9)), (sqrt(.9)/22.4, 0.2*22.4), full_grid[grid_inds][2:end])
 
 betas = [Float64[] for i in eachindex(kg_pairs)] 
 beta_true = [Float64[] for i in  eachindex(kg_pairs)] 
@@ -66,50 +67,31 @@ for (kappa,gamma) in kg_pairs
     counter += 1
 end 
 betas = betas ./ reps 
+#@save joinpath(home_dir, "Results", "beta_dy_sc.jdl2") betas
+#@save joinpath(home_dir, "Results", "beta_dy_ra.jdl2") betas
 
-@save joinpath(home_dir, "Results", "beta_dy_sc.jdl2") betas
-#@save joinpath(home_dir, "Results", "beta_ra_sc.jdl2") betas
-
-#=
-for i in eachindex(gammas)
-    gamma = gammas[i]
-    println("γ:$gamma")
-    for j in eachindex(kappas)
-        kappa = kappas[j]
-        println("κ:$kappa")
-        p = floor(Int64, n * kappa)
-        beta = fill_beta_SC(p) * gamma / sqrt(kappa) * 0.2 # Figure 2
-        #beta = fill_beta(p,b) / sqrt(9/2 * kappa) * gamma # Figure 1
-        beta_true[i,j] = beta
-        a = 1 / (1 + kappa)
-        for k in 1:reps 
-            Random.seed!((i - 1) * length(kappas) * reps + (j - 1) * reps + k) 
-            X = randn(n,p) / sqrt(n) 
-            mu = 1.0 ./ (1.0 .+ exp.(.-X*beta)) 
-            y = rand(n) .< mu 
-            beta_DY = Optim.minimizer(logistic_mDYPL(y, X, a; beta_init = beta, method = Optim.NewtonTrustRegion()))
-            if k == 1
-                betas[i,j] = beta_DY
-            else 
-                betas[i,j] .= betas[i,j][:] .+ beta_DY 
-            end 
-        end 
-    end 
-end =#
-
+betas = load(joinpath(home_dir, "Results", "beta_dy_sc.jdl2"))["betas"]
+#betas = load(joinpath(home_dir, "Results", "beta_dy_ra.jdl2"))["betas"]
 
 ks = .05:.025:.95 
-k_inds = findall(x -> x in kappas, ks)
 gs = .5:0.5:20
-g_inds = findall(x -> x in gammas, gs)
 
-params = load(joinpath(home_dir, "Results", "DY_RA_params.jld2"))["params"]
-params = [params[g, k, i] for g in g_inds, k in k_inds, i in axes(params, 3)]
+pars = load(joinpath(home_dir, "Results", "DY_RA_params.jld2"))["params"]
 
-alphas = map(v -> v[1], params)
+mus = Vector{Float64}(undef,length(kg_pairs))
+count = 1 
+for (kappa, gamma) in kg_pairs
+    if count > 2
+        row = findfirst(x -> isequal(x, gamma), gs) 
+        col = findfirst(x -> isequal(x, kappa), ks) 
+        mus[count] = pars[row,col][1] 
+    else 
+        mus[count] = find_params_nlsolve(kappa, gamma, 1 / (1 + kappa)).zero[1]
+    end 
+    count += 1 
+end  
 
 gamma_grid = vcat(0.0,0.001,0.01,collect(0.0:20/100:22.5)[2:end])
-
 #=
 Random.seed!(123) 
 ns = 2000000
@@ -121,7 +103,6 @@ out = Main.AMP_DY.h_mle(
 out = vcat([1 0],out, [0 maximum(gamma_grid)])
 =# 
 out = load(joinpath(home_dir, "Results", "phase_trans.jld2"))["out"]
-
 scalefontsizes(1.5)
 
 p = plot(out[:,1],out[:,2], 
@@ -147,7 +128,7 @@ plot!(p,out[:,1],out[:,2],
 
 plot!(p,out[:,1],out[:,2], 
 	fillrange = fill(maximum(gamma_grid),length(out[:,1])),
-    fillalpha = 0.35,
+    fillalpha = 0.1,
     fc = :gray,  
     label = :none, 
     xlabel = L"$\kappa$", 
@@ -158,19 +139,19 @@ plot!(p,out[:,1],out[:,2],
 xticks!(p,0:.1:1,vcat(L"0", "",L"0.2","",L"0.4","",L"0.6","",L"0.8","", L"1.0"), z = 1)
 yticks!(p,0:5:20,vcat(L"0",L"5",L"10",L"15",L"20"))
            
-scatter!(p,full_grid[grid_inds], color = :gray, label = :none, fillstyle = :none, markersize = 1) 
+scatter!(p, kg_pairs, color = :gray, label = :none, fillstyle = :none, markersize = 1) 
 xlim = Plots.xlims(p) 
 ylim = Plots.ylims(p) 
 
-for i in eachindex(grid_inds) 
+for i in eachindex(kg_pairs) 
     uv = unique(beta_true[i]) 
     mult = vcat(0,cumsum(map( v -> sum(isequal.(v,beta_true[i])), unique(beta_true[i]))))
     seqs = [(1+mult[j-1]):mult[j] for j in 2:length(mult)] 
-    (x,y) = full_grid[grid_inds[i]] 
+    (x,y) = kg_pairs[i]
     x_norm = (x  - xlim[1]) / (xlim[2] - xlim[1]) + .005
     y_norm = (y  - ylim[1]) / (ylim[2] - ylim[1]) + .005
     Plots.scatter!(p,
-        betas[i] ./ alphas[grid_inds[i]], #Uncomment for unscaled
+        betas[i],# ./ mus[i], #Uncomment for unscaled
         color = ColorSchemes.viridis[2/10],
         markerstrokecolor = ColorSchemes.viridis[2/10],
         fillalpha = .5, 
@@ -193,4 +174,4 @@ for i in eachindex(grid_inds)
     end
 end 
 
-Plots.savefig(p,joinpath(home_dir, "Figures", "AMP_DY_RA_phase_trans_plot_rescaled.pdf"))
+Plots.savefig(p, joinpath(home_dir, "Figures", "AMP_DY_RA_phase_trans_plot_unscaled.pdf"))

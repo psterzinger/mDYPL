@@ -1,22 +1,95 @@
 #Helpers for AMP_DY, AMP_Ridge, AMP_Lasso
-using Statistics, DataFrames, Optim, Random 
+using Statistics, DataFrames, Optim, Random, Roots 
 
 ### Proximal Operator 
-function prox_bζ(x,b)::Float64
-    f(z) = z + b / (1.0 + exp(-z)) - x
-    (l,u) = (-10,10)
-    fu = f(u) 
-    fl = f(l)
-    while fu * fl > 0 
-        u += 10 
-        l -= 10 
+#=
+function prox_bζ(x,b; cutoff = 10, ϵ = 2*eps())::Float64
+    if b < ϵ
+        return x 
+    elseif -x > log(b - ϵ) - log(ϵ) 
+        return x 
+    elseif x > log(b - ϵ) - log(ϵ) + b 
+        return x - b 
+    else 
+        f(z) = z + b / (1.0 + exp(-z)) - x
+        (l,u) = (-10,10)
         fu = f(u) 
-        fl = f(l) 
-    end 
-    bisection(f,l,u)[1]
+        fl = f(l)
+        c = 1
+        while fu * fl > 0 && c < cutoff
+            u += 10 
+            l -= 10 
+            fu = f(u) 
+            fl = f(l) 
+            c += 1
+        end 
+        if c >= cutoff
+            ∂f(z) = 1.0 + b * exp(z) / (1.0 + exp(z))^2
+            try 
+                return find_zero((f,∂f), 0.0, Roots.Newton())
+            catch e 
+                println(e) 
+                return NaN 
+            end 
+        else
+            bisection(f,l,u)[1]
+        end
+    end  
+end
+=# 
+function prox_bζ(x,b; maxiter = 100, br_steps = 5, ϵ = 2*eps())::Float64
+    if b < ϵ
+        return x 
+    elseif -x > log(b - ϵ) - log(ϵ) 
+        return x 
+    elseif x > log(b - ϵ) - log(ϵ) + b 
+        return x - b 
+    else 
+        z = get_x_init(x,b)
+        for _ in 1:maxiter
+            delta_z = -prox_res(z, b, x) / ∂prox_res(z, b) 
+            z += delta_z
+            if abs(delta_z) < ϵ
+                return z
+            end
+        end
+        (l,u) = (-10,10)
+        f(z) = prox_res(z,b,x) 
+        fu = f(u)
+        fl = f(l)
+        c = 1
+        while fu * fl > 0 && c < br_steps
+            u += 10 
+            l -= 10 
+            fu = prox_res(u,b,x) 
+            fl = f(l) 
+            c += 1
+        end 
+        if c >= br_steps
+            return NaN 
+        else
+            bisection(f,l,u)[1]
+        end
+    end  
 end
 
-function bisection(f, a_, b_, atol = 2eps(promote_type(typeof(b_),Float64)(b_)); increasing = sign(f(b_))) ## taken from julia discourse
+function get_x_init(x,b) 
+    if x > 0 
+        x - b 
+    else 
+        x 
+    end 
+end 
+
+function prox_res(z, b, x)
+    z + b / (1.0 + exp(-z)) - x
+end 
+
+function ∂prox_res(z, b) 
+    1.0 + b * exp(z) / (1.0 + exp(z))^2
+end 
+
+function bisection(f, a_, b_, atol = 2eps(promote_type(typeof(b_),Float64)(b_)); increasing = sign(f(b_))) # found at https://discourse.julialang.org/t//12658
     a_, b_ = minmax(a_, b_)
     c = middle(a_,b_)
     z = f(c) * increasing
@@ -29,7 +102,7 @@ function bisection(f, a_, b_, atol = 2eps(promote_type(typeof(b_),Float64)(b_));
     end
     while abs(a - b) > atol
         c = middle(a,b)
-        if f(c) * increasing > 0 #
+        if f(c) * increasing > 0 
             b = c
         else
             a = c

@@ -1,4 +1,4 @@
-using JLD2, Plots, LaTeXStrings
+using JLD2, Plots, LaTeXStrings, Makie, CairoMakie
 home_dir = ""
 
 include(joinpath(home_dir, "Scripts", "AMP_DY.jl"))
@@ -49,7 +49,104 @@ for i in eachindex(gammas)
     end 
 end 
 
+CairoMakie.activate!()
+s = Figure()
 
+grange = 1:1:length(gammas) 
+krange = 1:1:length(kappas) 
+mina = minimum(min_alpha)
+shift = 0.0
+
+ztick = [0.2,0.4,0.6,0.8,1.0] .- mina .+ shift
+zlabels = [L"$0.2$",L"$0.4$",L"$0.6$",L"$0.8$",L"$1$"]
+xtick = [0.2,0.4,0.6,0.8]
+xlabels = [L"$0.2$",L"$0.4$",L"$0.6$",L"$0.8$"]
+ytick = vcat(1,2:2:10) 
+ylabels = [L"1", L"$2$",L"$4$",L"$6$",L"$8$",L"$10$"]
+
+ax = Axis3(
+    s[1, 1],
+    ylabel = L"\gamma",
+    xlabel = L"\kappa",
+    zlabel = L"\alpha",
+    xticklabelsize = 24,
+    yticklabelsize = 24,
+    zticklabelsize = 24,
+    xlabelsize = 30, 
+    ylabelsize = 30,
+    zlabelsize = 30,
+    xreversed = true,
+    zticks = (ztick, zlabels), 
+    yticks = (ytick, ylabels), 
+    xticks = (xtick, xlabels), 
+    aspect = :equal, 
+    elevation = 0.15 * pi, 
+    azimuth = 1.1 * pi, 
+    zspinecolor_2 = :lightgray, 
+    zspinecolor_3 = :white, 
+    xspinecolor_2 = :lightgray, 
+    xspinecolor_3 = :white, 
+    yspinecolor_2 = :lightgray, 
+    yspinecolor_3 = :white, 
+    protrusions = (25,5,30,5)
+)
+
+Makie.xlims!(ax, 1, 0.1)
+Makie.zlims!(ax, 0.0, 1.02-mina+shift)
+Makie.ylims!(ax, .125, 10)
+
+Makie.wireframe!(ax, kappas[krange], gammas[grange], min_alpha[grange, krange]' .- mina .+ shift,
+    color = :black, 
+    overdraw = true
+)
+
+#= Add contour plot to surface plot 
+grange = 1:length(gammas) 
+krange = 1:length(kappas) 
+Makie.contour!(ax, kappas[krange], gammas[grange], min_alpha[grange, krange]' .- mina .+ shift,
+    color = :black,
+    levels = 20
+)
+=#
+Makie.save(joinpath(home_dir, "Figures", "min_sigma_mu.pdf"), s, resolution = (600, 600))
+
+xtick = [0,0.2,0.4,0.6,0.8,1]
+xlabels = [L"0",L"$0.2$",L"$0.4$",L"$0.6$",L"$0.8$",L"1"]
+
+s = Figure(fonts = (; math = "Latin Modern Math")) 
+ax = Axis(
+    s[1, 1],
+    ylabel = L"\gamma",
+    xlabel = L"\kappa",
+    xticklabelsize = 27,
+    yticklabelsize = 27,
+    xlabelsize = 34, 
+    ylabelsize = 34,
+    xreversed = true,
+    yticks = (ytick, ylabels), 
+    xticks = (xtick, xlabels)
+)
+Makie.hidespines!(ax, :t, :r) 
+Makie.xlims!(ax, 1, 0)
+Makie.ylims!(ax, .125, 10)
+
+krange = 1:length(kappas)
+grange = 1:length(gammas) 
+
+maxa = maximum(min_alpha)
+levels = log.(range(exp(mina),exp(maxa),20))
+
+Makie.contour!(ax, kappas[krange], gammas[grange], min_alpha[grange, krange]';
+    labels=true, 
+    levels, 
+    color = :black,
+    labelsize = 20, 
+    labelfont = :math
+)
+Makie.save(joinpath(home_dir, "Figures", "min_sigma_mu_contour_only.pdf"), s, resolution = (600, 600))
+
+
+#=
 gr() 
 #scalefontsizes(1.5)
 grange = 1:length(gammas) 
@@ -61,6 +158,7 @@ p = Plots.wireframe(gammas[grange],kappas[krange],min_alpha[grange,krange]',
     camera  = (30,45),
     xlabel = L"$\gamma$",
     ylabel = L"$\kappa$", 
+    zlabel = L"$\alpha$",
     size = (400,400), 
     xticks = (vcat(1,2:2:10),[L"1", L"$2$",L"$4$",L"$6$",L"$8$",L"$10$"]), 
     yticks = ([0.2,0.4,0.6,0.8],[L"$0.2$",L"$0.4$",L"$0.6$",L"$0.8$"]), 
@@ -68,3 +166,4 @@ p = Plots.wireframe(gammas[grange],kappas[krange],min_alpha[grange,krange]',
 ) 
 
 Plots.savefig(p, joinpath(home_dir, "Figures", "min_sigma_mu_surface.pdf"))
+=#

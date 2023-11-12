@@ -211,12 +211,12 @@ Solve the stationary mDYPL state evolution equations for `mu, b, sigma` using `N
 
 # Examples 
 ```jldoctest
-julia> sol = find_params_nlsolve(0.2,sqrt(5),1.0; x_init = [1.5,3.,4.7]);
+julia> sol = find_params_nlsolve(0.2,sqrt(5),1.0);
 julia> sol.zero
 3-element Vector{Float64}:
- 1.4993501022044349
- 3.026926110363654
- 4.743553082156796
+ 1.4993501215089662
+ 3.0269261565643384
+ 4.743553152192822
 ```
 
 See also [`find_params_nonlinearsolve`](@ref)
@@ -322,9 +322,9 @@ Solve the stationary mDYPL state evolution equations for `mu, b, sigma` using `N
 ```jldoctest
 julia> sol = find_params_nonlinearsolve(0.2,sqrt(5),1.0)
 3-element Vector{Float64}:
- 1.4993501215089675
- 3.0269261565643406
- 4.743553152192829
+ 1.4993501215089668
+ 3.02692615656434
+ 4.743553152192827
 ```
 
 See also [`find_params_nlsolve`](@ref)

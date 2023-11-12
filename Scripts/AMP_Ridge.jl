@@ -86,9 +86,9 @@ N.b.: `sigma` corresponds to `σ̄ / √κ` in Salehi et al. (2019)
 julia> sol = find_params_ridge_nlsolve(0.2,sqrt(5),0.0; x_init = [1.5,3.,4.7]);
 julia> sol.zero 
 3-element Vector{Float64}:
- 1.4993501022044349
- 3.026926110363654
- 4.743553082156796
+ 1.4993501154076798
+ 3.0269261421855505
+ 4.743553128667718
 ```
 
 See also [`find_params_ridge_nonlinearsolve`](@ref)
@@ -177,9 +177,9 @@ N.b.: `sigma` corresponds to `σ̄ / √κ` in Salehi et al. (2019)
 ```jldoctest
 julia> sol = find_params_ridge_nonlinearsolve(0.2,sqrt(5),0.0)
 3-element Vector{Float64}:
- 1.49935007951724
- 3.0269260555057445
- 4.743552987810247
+ 1.4993500794510768
+ 3.026926055407923
+ 4.7435529873394415
 ```
 
 See also [`find_params_ridge_nlsolve`](@ref)
