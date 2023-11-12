@@ -4,7 +4,6 @@ This repo contains all materials to the paper: *Maximum Diaconis & Ylvisaker pen
 - **Scripts**: All scripts to recreate the numerical results, simulation experiments and plots in the paper. 
 	- `adaptive_alpha_surface_plots.jl`: Generate Figure 5 of the main text 
 	- `adaptive_shrinkage_simul.jl`: Generate Table 1 of the main text 
-	- `AMP_DY_unbiased.jl`: A julia mini-module to find shrinkage parameter α for state evolution parameters (1,b,σ)	
 	- `AMP_DY.jl`: A julia mini-module to compute the mDYPL estimator and to numerically find the state evolution parameters (μ,b,σ)
 	- `AMP_DY_helpers.jl`: Helper functions for `AMP_DY_unbiased.jl`, `AMP_DY.jl`, `AMP_Ridge.jl`
 	- `beta_norm_simul.jl`: Generate data for Figure 3 of the main text and Figure 1 of the supplementary material document 
