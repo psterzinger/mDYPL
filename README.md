@@ -19,4 +19,5 @@ This repo contains all materials to the paper: *Maximum Diaconis & Ylvisaker pen
 - **mDYPL_supplementary.pdf**: Document with proofs of the results in the main paper, along with additional numerical results.
 
 **References** 
+
 Salehi, F., Abbasi, E., & Hassibi, B. (2019). The impact of regularization on high-dimensional logistic regression. Advances in Neural Information Processing Systems, 32.
