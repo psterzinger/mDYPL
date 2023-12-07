@@ -1,5 +1,5 @@
 # mDYPL
-This repo contains all materials to the paper: *Maximum Diaconis & Ylvisaker penalized likelihood for high dimensional logistic regression: p/n → κ, arbitrary signal, arbitrary covariate covariance*.
+This repo contains all materials to the paper: *MDiaconis-Ylvisaker prior penalized likelihood for p/n→κ∈(0,1) logistic regression*, which can be found [here]([https://link-url-here.org](https://arxiv.org/abs/2311.07419)
 
 - **Scripts**: All scripts to recreate the numerical results, simulation experiments and plots in the paper. 
 	- `adaptive_alpha_surface_plots.jl`: Generate Figure 5 of the main text 
