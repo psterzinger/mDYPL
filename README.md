@@ -1,5 +1,5 @@
 # mDYPL
-This repo contains all materials to the paper: *MDiaconis-Ylvisaker prior penalized likelihood for p/n→κ∈(0,1) logistic regression*, which can be found [here](https://arxiv.org/abs/2311.07419).
+This repo contains all materials to the paper: *Diaconis-Ylvisaker prior penalized likelihood for p/n→κ∈(0,1) logistic regression*, which can be found [here](https://arxiv.org/abs/2311.07419).
 
 - **Scripts**: All scripts to recreate the numerical results, simulation experiments and plots in the paper. 
 	- `adaptive_alpha_surface_plots.jl`: Generate Figure 5 of the main text 
